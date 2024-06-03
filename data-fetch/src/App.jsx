@@ -1,47 +1,83 @@
-import React, { useEffect, useState } from 'react';
-import './App.css'
+import { useEffect } from 'react';
+import './App.css';
+import { useState } from 'react';
 
 function App() {
-  const url =   "https://www.random.org/integers/?num=200&min=1&max=10&col=1&base=10&format=plain&rnd=new";
-  const [data, setData] = useState({});
+  const [freq, setFreq] = useState(undefined);
+  const [yAxis, setYAxis] = useState([]);
+  const fetchNumbers = async () => {
+    const url = 'https://www.random.org/integers/?num=200&min=1&max=10&col=1&base=10&format=plain&rnd=new'
+    const res = await fetch(url);
+    let data = await res.text();
+    data = data.split('\n').filter(Boolean);
+    const map = {};
+    data?.forEach(item => {
+      if (map[item]) {
+        map[item] = map[item] + 1;
+      } else {
+        map[item] = 1
+      }
+    });
+    setFreq(map);
+  }
 
+  console.log(freq);
+
+  //preparing y-axis data
+  // [30,20,10,0]
   useEffect(() => {
-    fetch(url)
-      .then((res) => res.text())
-      .then((data) => {
-        let map = {};
-        const arr = data.trim().split("\n");
-        arr.forEach((n) => (map[n] = (map[n] || 0) + 1));
-        setData(map);
-      })
-      .catch((e) => console.log("Data fetch error: ", e));
-  }, []);
-
+    if (freq) {
+      const max = Math.max(...Object.values(freq));
+      const maxVal = Math.ceil(max / 10) * 10;
+      let arr = [];
+      for (let i = (maxVal / 10); i >= 0; i--) {
+        //3,2,1,0
+        arr.push(i * 10);//30,20,10,0
+      }
+      setYAxis(arr);
+    }
+  }, [freq])
+  console.log('yAxis ', yAxis);
+  useEffect(() => {
+    fetchNumbers();
+  }, [])
   return (
-    <div id="container">
-      <div
-        style={{
-          height: "100%",
-          display: "grid",
-          gridTemplateColumns: "auto 1fr",
-        }}
-      >
-        <div id="chart-y">
-          <span>30</span>
-          <span>20</span>
-          <span>10</span>
-          <span>0</span>
+    <div className="App">
+      <div className='container'>
+        <div className='box'>
+          <div
+            className='box-y-axis'
+            style={{
+              height: `${yAxis && yAxis[0]}%`
+            }}
+          >
+            {
+              yAxis?.map((val, idx) => (
+                <div key={idx}>
+                  <span>{val}</span>
+                </div>
+              ))
+            }
+          </div>
+
+          {
+            freq &&
+            Object.entries(freq)
+              ?.map(([key, val]) => (
+                <div className='box-x-axis'>
+                  <div
+                    style={{
+                      height: `${val}%`
+                    }}
+                    className='graph'>
+                  </div>
+                  <div className='index'>
+                    {key}
+                  </div>
+                </div>
+              ))
+          }
         </div>
-        <div id="chart">
-          {Object.values(data).map((n) => (
-            <span style={{ height: n * 10 }}>{n}</span>
-          ))}
-        </div>
-      </div>
-      <div id="chart-x">
-        {Object.keys(data).map((key) => (
-          <span>{key}</span>
-        ))}
       </div>
     </div>
   );
